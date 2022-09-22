@@ -1,4 +1,3 @@
-from msilib.schema import PublishComponent
 import maya.cmds as cmds
 import os
 
@@ -64,5 +63,3 @@ def save_publish_init():
 
 save_publish_init()
 
-
-#C:\Program Files\Autodesk\Maya2023
