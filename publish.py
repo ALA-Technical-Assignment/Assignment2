@@ -1,15 +1,20 @@
 import maya.cmds as cmds
 import os
 
+path = ''
+prefixPath = ''
+folderPath = ''
+files = []
+
 def openCharater():
    folderPath = folderPath + "\Asset"
    if(os.path.isdir(folderPath)):
       destPath = folderPath + "\Character"
       if(os.path.isdir(destPath)):
-         os.chdir(destPath)
+         files = os.listdir(destPath)
       else:
          os.mkdir(destPath)
-         os.chdir(destPath)
+         files = os.listdir(destPath)
    else:
       os.mkdir(folderPath)
       os.chdir(folderPath)
@@ -19,10 +24,10 @@ def openProp():
    if(os.path.isdir(folderPath)):
       destPath = folderPath + "\Prop"
       if(os.path.isdir(destPath)):
-         os.chdir(destPath)
+         files = os.listdir(destPath)
       else:
          os.mkdir(destPath)
-         os.chdir(destPath)
+         files = os.listdir(destPath)
    else:
       os.mkdir(folderPath)
       os.chdir(folderPath)
@@ -33,9 +38,10 @@ def openSet():
       destPath = folderPath + "\Set"
       if(os.path.isdir(destPath)):
          os.chdir(destPath)
+         files = os.listdir(destPath)
       else:
          os.mkdir(destPath)
-         os.chdir(destPath)
+         files = os.listdir(destPath)
    else:
       os.mkdir(folderPath)
       os.chdir(folderPath)
@@ -48,19 +54,20 @@ def openSetPiece():
          os.chdir(destPath)
       else:
          os.mkdir(destPath)
-         os.chdir(destPath)
+         files = os.listdir(destPath)
    else:
       os.mkdir(folderPath)
       os.chdir(folderPath)
 
 def openSequence():
-   global folderPath 
    folderPath = prefixPath + "\Sequence"
    if(os.path.isdir(folderPath)):
       os.chdir(folderPath)
+      files = os.listdir(folderPath)
    else:
       os.mkdir(folderPath)
       os.chdir(folderPath)
+      files = os.listdir(folderPath)
 
 def nameFile():
    print("test")
@@ -68,8 +75,16 @@ def nameFile():
 def saveFile():
    print("test")
 
+def publishFile():
+   print("test")
+
+def saveWindowCancel():
+   print("test")
+
+def publishWindowCancel():
+   print("test")
+
 def prefixPath():
-   global prefixPath
    prefixPath = cmds.textFieldGrp(path, q = True, text = True)
    if(os.path.isdir(prefixPath)):
       os.chdir(prefixPath)
@@ -79,7 +94,6 @@ def prefixPath():
 
 
 def save_window():
-   global folderPath 
    folderPath = prefixPath + "\wip"
    if(os.path.isdir(folderPath)):
       os.chdir(folderPath)
@@ -95,7 +109,6 @@ def save_window():
 
 
 def publish_window():
-   global folderPath
    folderPath = prefixPath + "\publish"
    if(os.path.isdir(folderPath)):
       os.chdir(folderPath)
@@ -116,7 +129,6 @@ def save_publish_init():
    cmds.window('save_publish_init', resizeToFitChildren=True)
    cmds.scrollLayout()
 
-   global path
    path = cmds.textFieldGrp(label = 'Folder Path:', text=os.getcwd(),editable=True)
    cmds.button(l = 'Confirm', command = 'prefixPath()')
    cmds.button(label = 'Save', command = 'save_window()')
