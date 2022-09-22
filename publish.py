@@ -1,10 +1,71 @@
 import maya.cmds as cmds
 import os
 
-def openAsset():
-   print("test")
+def openCharater():
+   folderPath = folderPath + "\Asset"
+   if(os.path.isdir(folderPath)):
+      destPath = folderPath + "\Character"
+      if(os.path.isdir(destPath)):
+         os.chdir(destPath)
+      else:
+         os.mkdir(destPath)
+         os.chdir(destPath)
+   else:
+      os.mkdir(folderPath)
+      os.chdir(folderPath)
+
+def openProp():
+   folderPath = folderPath + "\Asset"
+   if(os.path.isdir(folderPath)):
+      destPath = folderPath + "\Prop"
+      if(os.path.isdir(destPath)):
+         os.chdir(destPath)
+      else:
+         os.mkdir(destPath)
+         os.chdir(destPath)
+   else:
+      os.mkdir(folderPath)
+      os.chdir(folderPath)
+
+def openSet():
+   folderPath = folderPath + "\Asset"
+   if(os.path.isdir(folderPath)):
+      destPath = folderPath + "\Set"
+      if(os.path.isdir(destPath)):
+         os.chdir(destPath)
+      else:
+         os.mkdir(destPath)
+         os.chdir(destPath)
+   else:
+      os.mkdir(folderPath)
+      os.chdir(folderPath)
+
+def openSetPiece():
+   folderPath = folderPath + "\Asset"
+   if(os.path.isdir(folderPath)):
+      destPath = folderPath + "\SetPiece"
+      if(os.path.isdir(destPath)):
+         os.chdir(destPath)
+      else:
+         os.mkdir(destPath)
+         os.chdir(destPath)
+   else:
+      os.mkdir(folderPath)
+      os.chdir(folderPath)
 
 def openSequence():
+   global folderPath 
+   folderPath = prefixPath + "\Sequence"
+   if(os.path.isdir(folderPath)):
+      os.chdir(folderPath)
+   else:
+      os.mkdir(folderPath)
+      os.chdir(folderPath)
+
+def nameFile():
+   print("test")
+
+def saveFile():
    print("test")
 
 def prefixPath():
@@ -18,6 +79,7 @@ def prefixPath():
 
 
 def save_window():
+   global folderPath 
    folderPath = prefixPath + "\wip"
    if(os.path.isdir(folderPath)):
       os.chdir(folderPath)
@@ -33,6 +95,7 @@ def save_window():
 
 
 def publish_window():
+   global folderPath
    folderPath = prefixPath + "\publish"
    if(os.path.isdir(folderPath)):
       os.chdir(folderPath)
@@ -62,4 +125,3 @@ def save_publish_init():
    cmds.showWindow('save_publish_init')
 
 save_publish_init()
-
