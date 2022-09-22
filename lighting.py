@@ -1,10 +1,20 @@
 import maya.cmds as cmds
+import os
+from enum import Enum
 
-def sceneBuilder() :
-    if cmds.window('sceneBuilder', exists=1):
+class SceneType(Enum):
+    Layout = 1
+    Animation = 2
+    Lighting = 3
+
+currentFilePath = ''
+sceneToBuild = ''
+
+def sceneBuilder():
+    if cmds.window('sceneBuilder', exists=True):
         cmds.deleteUI('sceneBuilder')
 
-    cmds.window('sceneBuilder', resizeToFitChildren=1)
+    cmds.window('sceneBuilder', resizeToFitChildren=True)
 
     cmds.columnLayout()
 
@@ -15,10 +25,10 @@ def sceneBuilder() :
     cmds.button(label='Open File', command='selectCurrentFile()')
 
     cmds.separator(h=10)
-    cmds.text('The current file is: ')
+    global currentFilePath
+    cmds.text('The current file is: ' + currentFilePath)
     cmds.separator(h=10)
     
-
     # -----------TO-DO-------------
     # make invisible until select file throws an error
     # -----------------------------
@@ -44,6 +54,7 @@ def sceneBuilder() :
 
 def selectCurrentFile():
     print('selectCurrentFile')
+    print(currentFilePath)
 
 def checkForUpdates():
     print('checkForUpdates')
@@ -54,4 +65,30 @@ def updateAsset():
 def buildScene():
     print('buildScene')
 
+def getCurrentScene():
+    global currentFilePath
+    currentFilePath = cmds.file(q=True, sn=True)
+    print(currentFilePath)
+    setSceneType()
+
+def setSceneType():
+    global currentFilePath
+    global sceneToBuild
+    # normalise the path so that os.sep is safe to use
+    path = os.path.normpath(currentFilePath)
+    # split the path into each folder
+    folders = path.split(os.sep)
+    # folders = ['C:', 'path', 'to', 'file.txt']
+    # get the second last element, which is the folder the file lives in = 'layout/animation/lighting'
+    parentFolder = folders[-2]
+    if parentFolder == 'layout':
+        sceneToBuild = SceneType.Layout
+    elif parentFolder == 'animation':
+        sceneToBuild = SceneType.Animation
+    elif parentFolder == 'lightning':
+        sceneToBuild = SceneType.Lighting
+    else:
+        print('Builder cannot build for scene: ' + folders[-2])
+    
+getCurrentScene()
 sceneBuilder()
