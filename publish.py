@@ -23,11 +23,12 @@ def nameFile(currentValue):
       updateVersion = '_'.join(stringList) + updateNo
       fileName = cmds.textFieldGrp(label = 'File Name', editable=True, text=updateVersion)
 
-def createOptionMenu():
-   cmds.optionMenu( label= 'Content', changeCommand=nameFile )
+def createOptionMenu(name):
+   cmds.optionMenu( label= name, changeCommand=nameFile )
    if not files:
       cmds.menuItem(label = '')
    else:
+      cmds.menuItem(label = '')
       for i in files:
          cmds.menuItem( label= i )
 
@@ -45,7 +46,7 @@ def confirm():
 def openCharater():
    global folderPath
    global files
-   assetPath = joinPath(folderPath,"Asset")
+   assetPath = joinPath(prefixPath,"Asset")
    folderPath = joinPath(assetPath,"Character")
    if(os.path.isdir(assetPath)):
       if(os.path.isdir(folderPath)):
@@ -55,12 +56,12 @@ def openCharater():
    else:
       os.mkdir(assetPath)
       os.mkdir(folderPath)
-   createOptionMenu()
+   createOptionMenu('Character')
 
 def openProp():
    global folderPath
    global files
-   assetPath = joinPath(folderPath, "Asset")
+   assetPath = joinPath(prefixPath, "Asset")
    folderPath = joinPath(assetPath, "Prop")
    if(os.path.isdir(assetPath)):
       if(os.path.isdir(folderPath)):
@@ -70,12 +71,12 @@ def openProp():
    else:
       os.mkdir(assetPath)
       os.mkdir(folderPath)
-   createOptionMenu()
+   createOptionMenu('Prop')
 
 def openSet():
    global folderPath
    global files
-   assetPath = joinPath(folderPath, "Asset")
+   assetPath = joinPath(prefixPath, "Asset")
    folderPath = joinPath(assetPath, "Set")
    if(os.path.isdir(assetPath)):
       if(os.path.isdir(folderPath) == False):
@@ -85,12 +86,12 @@ def openSet():
    else:
       os.mkdir(assetPath)
       os.mkdir(folderPath)
-   createOptionMenu()
+   createOptionMenu('Set')
 
 def openSetPiece():
    global folderPath
    global files
-   assetPath = joinPath(folderPath, "Asset")
+   assetPath = joinPath(prefixPath, "Asset")
    folderPath = joinPath(assetPath, "SetPiece")
    if(os.path.isdir(assetPath)):
       if(os.path.isdir(folderPath) == False):
@@ -100,16 +101,16 @@ def openSetPiece():
    else:
       os.mkdir(assetPath)
       os.mkdir(folderPath)
-   createOptionMenu()
+   createOptionMenu('SetPiece')
 
 def openSequence():
    global folderPath
    global files
-   folderPath = joinPath(folderPath,"Sequence")
+   folderPath = joinPath(prefixPath,"Sequence")
    if(os.path.isdir(folderPath) == False):
       os.mkdir(folderPath)
       files = os.listdir(folderPath)
-   createOptionMenu()   
+   createOptionMenu('Sequence')   
 
 def saveFile():
    customPth = joinPath(folderPath, fileName) 
