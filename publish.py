@@ -5,26 +5,83 @@ import pathlib
 path = r"{}".format(cmds.file(q=True, sceneName=True))
 prefixPath = ''
 folderPath = ''
+filePath = ''
 files = []
 fileName = ''
+saveMode = False
+publishMode = False
 
 # Methods to execute
+# Save window methods
 def nameFile(currentValue):
    global fileName
+   print("Save File mode")
    if not files:
-      name = cmds.textFieldGrp(label = 'File Name', editable=True)
+      if cmds.textFieldGrp('name', exists = True):
+         cmds.deleteUI('name')
+      name = cmds.textFieldGrp('name', label = 'File Name', editable=True)
       fileName = name + "v_001"
    else:
       stringList = currentValue.split("_")
-      versionArray = [int(i) for i in stringList[-1].split() if i.isdigit()]
-      versionNo = versionArray[0]
-      stringList.pop(-1)
-      updateNo = '_' + f'{versionNo:03d}'
-      updateVersion = '_'.join(stringList) + updateNo
+      versionArray = [int(i) for i in stringList[-1].split('v') if i.isdigit()]
+      if len(versionArray) != 0:
+         versionNo = versionArray[0]+1
+         stringList.pop(-1)
+         updateNo = '_v' + f'{versionNo:03d}'
+         updateVersion = '_'.join(stringList) + updateNo
+      else:
+         updateVersion = currentValue + '_v001'
+      if cmds.textFieldGrp(fileName, exists = True):
+         cmds.deleteUI(fileName)
       fileName = cmds.textFieldGrp(label = 'File Name', editable=True, text=updateVersion)
 
+
+# Publish window methods
+def checkfileFromWIP(currentValue):
+   global fileName
+   global filePath
+   fileName = currentValue
+   dest = joinPath(folderPath, currentValue)
+   if(os.path.isfile(dest)):
+      filePath = dest
+      cmds.text("Chosen File path: " + dest)
+      cmds.button('Publish',enable = True)
+   else:
+      cmds.text("Warning: file cannot be find in the saving directory")
+      cmds.button('Publish',enable = False)
+
+def updateVersion():
+   os.remove(filePath)
+   stringList = fileName.split("_")
+   versionArray = [int(i) for i in stringList[-1].split('v') if i.isdigit()]
+   if len(versionArray) != 0:
+      versionNo = versionArray[0]+1
+      stringList.pop(-1)
+      updateNo = '_v' + f'{versionNo:03d}'
+      updateVersion = '_'.join(stringList) + updateNo
+   else:
+      updateVersion = fileName + '_v001'
+   customPath = joinPath(folderPath, updateVersion) 
+   cmds.file(rename = customPath)
+   cmds.file(s=True,f=True, typ= "mayaBinary")
+
+def cacheFormated(text):
+   cacheFolder = joinPath(folderPath, 'cache')
+   if(os.path.isdir(cacheFolder) == False):
+      os.mkdir(cacheFolder)
+   customPth = joinPath(cacheFolder, fileName)
+   cmds.file(rename = customPth)
+   cmds.file(s=True,f=True, typ= text)
+
+
+# General functions
 def createOptionMenu(name):
-   cmds.optionMenu( label= name, changeCommand=nameFile )
+   if cmds.optionMenu(name, exists = True):
+         cmds.deleteUI(name)
+   if (saveMode == True):
+      cmds.optionMenu(name, label= name, changeCommand=nameFile )
+   if (publishMode == True):
+      cmds.optionMenu(name, label= name, changeCommand=checkfileFromWIP) 
    if not files:
       cmds.menuItem(label = '')
    else:
@@ -32,21 +89,22 @@ def createOptionMenu(name):
       for i in files:
          cmds.menuItem( label= i )
 
-def joinPath(filePath, newElement):
-   newPath = pathlib.PurePath(filePath, newElement)
+def joinPath(file, newElement):
+   newPath = pathlib.PurePath(file, newElement)
    return newPath
-
-# UI Functions
 
 def confirm():
     global prefixPath
     prefixPath = cmds.textFieldGrp(path, q =True, text = True)
     print(prefixPath)
 
+
+# UI Functions
+# Option menu commands
 def openCharater():
    global folderPath
    global files
-   assetPath = joinPath(prefixPath,"Asset")
+   assetPath = joinPath(folderPath,"Asset")
    folderPath = joinPath(assetPath,"Character")
    if(os.path.isdir(assetPath)):
       if(os.path.isdir(folderPath)):
@@ -61,7 +119,7 @@ def openCharater():
 def openProp():
    global folderPath
    global files
-   assetPath = joinPath(prefixPath, "Asset")
+   assetPath = joinPath(folderPath, "Asset")
    folderPath = joinPath(assetPath, "Prop")
    if(os.path.isdir(assetPath)):
       if(os.path.isdir(folderPath)):
@@ -76,7 +134,7 @@ def openProp():
 def openSet():
    global folderPath
    global files
-   assetPath = joinPath(prefixPath, "Asset")
+   assetPath = joinPath(folderPath, "Asset")
    folderPath = joinPath(assetPath, "Set")
    if(os.path.isdir(assetPath)):
       if(os.path.isdir(folderPath) == False):
@@ -91,7 +149,7 @@ def openSet():
 def openSetPiece():
    global folderPath
    global files
-   assetPath = joinPath(prefixPath, "Asset")
+   assetPath = joinPath(folderPath, "Asset")
    folderPath = joinPath(assetPath, "SetPiece")
    if(os.path.isdir(assetPath)):
       if(os.path.isdir(folderPath) == False):
@@ -106,19 +164,35 @@ def openSetPiece():
 def openSequence():
    global folderPath
    global files
-   folderPath = joinPath(prefixPath,"Sequence")
+   folderPath = joinPath(folderPath,"Sequence")
    if(os.path.isdir(folderPath) == False):
       os.mkdir(folderPath)
       files = os.listdir(folderPath)
    createOptionMenu('Sequence')   
 
+
+# Button commands
 def saveFile():
+   global folderPath
+   global fileName
+   global saveMode
    customPth = joinPath(folderPath, fileName) 
    cmds.file(rename = customPth)
    cmds.file(s=True,f=True, typ= "mayaBinary")
+   folderPath = ''
+   fileName = ''
+   saveMode = False
+   cmds.deleteUI('save_window')
 
 def publishFile():
-   print("test")
+   if filePath.contains('/'):
+      paths = filePath.split('/')
+      paths = list(map(lambda x: x.replace('wip', 'publish'), paths))
+      dest = '/'.join(paths)
+   elif filePath.contains('\\'):
+      paths = filePath.split('\\')
+      paths = list(map(lambda x: x.replace('wip', 'publish'), paths))
+      dest = '\\'.join(paths)
 
 def saveWindowCancel():
    print("test")
@@ -126,8 +200,11 @@ def saveWindowCancel():
 def publishWindowCancel():
    print("test")
 
-
+# Windows
 def save_window():
+   global saveMode
+   global folderPath
+   saveMode = True
    folderPath = joinPath(prefixPath, "wip")
    if(os.path.isdir(folderPath) == False):
       os.mkdir(folderPath)
@@ -163,14 +240,20 @@ def save_window():
 
 
 def publish_window():
-   folderPath = joinPath(prefixPath, "publish")
-   if(os.path.isdir(folderPath) == False):
-      os.mkdir(folderPath)
+   global folderPath
+   global publishMode
+   publishMode = True
+   folderPath = joinPath(prefixPath, "wip")
+   destPath = joinPath(prefixPath, "publish")
+   if(os.path.isdir(destPath) == False):
+      os.mkdir(destPath)
    if cmds.window('save_publish_init', exists = True):
       cmds.deleteUI('save_publish_init')
    cmds.window('publish_window', resizeToFitChildren=True)
    cmds.scrollLayout()
    
+   cmds.button('Publish', label='Character', enable = False)#, command='openCharater()')
+
    cmds.showWindow('publish_window')
 
 
