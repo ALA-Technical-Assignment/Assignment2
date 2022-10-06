@@ -79,7 +79,7 @@ def sceneBuilder():
     # -----------TO-DO-------------
     # gray out when no changes made
     # -----------------------------
-    cmds.button(label='Load', command='buildScene()', en=False)
+    cmds.button(label='Load', command='buildScene()')
 
     cmds.button('my_button', label='Debug', command='debugFunction()')
 
@@ -97,6 +97,9 @@ def updateAsset():
     print('updateAsset')
 
 def buildScene():
+    global setRef
+    # cmds.file(setRef, reference=True)
+    print(setRef)
     print('buildScene')
 
 def getCurrentScene():
@@ -148,9 +151,21 @@ def setCharAnimCacheReference():
 
 def debugFunction():
     global folders
-    assFolder = folders
-    assFolder = os.path.join(folders)
-    print(assFolder)
+    global currentFilePath
+    
+    workingPath = 'C:/Users/Shiva/Desktop/Uni/2022 Spring (Current)/41801 Technical Direction for 3D Animation and Graphics Projects/projects'
+
+    assFolder = os.path.split(currentFilePath)[0]
+    assFolder = os.path.normpath(assFolder).split(os.sep)
+    
+    # add or remove directories
+    assFolder.append('Assignment2')
+
+    assFolder = os.path.join(*assFolder)
+    assFolder = os.path.splitdrive(assFolder)
+    assFolder = assFolder[0] + os.sep + assFolder[1]
+    assFolder = assFolder.replace('\\', '/')
+    cmds.fileDialog2(dialogStyle=1, fileMode=1, dir=assFolder)
 
 def printFoo(foo):
     print(foo)
