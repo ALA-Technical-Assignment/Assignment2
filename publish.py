@@ -1,20 +1,23 @@
 import maya.cmds as cmds
 import os
 import pathlib
+from functools import partial
 
 path = ''
 prefixPath = ''
 folderPath = ''
 filePath = ''
 fileName = ''
+modelName = ''
 files = []
+folders = []
 saveMode = False
+checkingFinalFolder = False
 publishMode = False
 
 # Methods to execute
 # Save window methods
 def nameFile(currentValue):
-   global fileName
    print("Save File mode")
    stringList = currentValue.split("_")
    versionArray = [int(i) for i in stringList[-1].split('v') if i.isdigit()]
@@ -29,21 +32,40 @@ def nameFile(currentValue):
       cmds.deleteUI('fileName')
    cmds.textFieldGrp('fileName', label = 'File Name', editable=True, text=updateVersion)
 
+def nameFolder(currentValue):
+   global folderPath
+   global checkingFinalFolder
+   checkingFinalFolder = True
+   if cmds.textFieldGrp('folderName', exists = True):
+      cmds.deleteUI('folderName')
+   cmds.textFieldGrp('folderName', label = 'Model Name', editable=True, text=currentValue)
+
+def folderButton(typeName, *args):
+   global folderPath
+   global files
+   if(saveMode == True):
+      folder = cmds.textFieldGrp('folderName', q=True, text = True)
+   else:
+      folder = fileName
+   modelFolder = joinPath(folderPath, folder)
+   folderPath = joinPath(modelFolder, typeName)
+   pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
+   files = os.listdir(folderPath)
+   createOptionMenu('Model', files)
+
 
 # Publish window methods
 def checkfileFromWIP(currentValue):
-   global fileName
+   global modelName
    global filePath
-   fileName = currentValue
+   modelName = currentValue
    dest = joinPath(folderPath, currentValue)
    if(os.path.isfile(dest)):
       filePath = dest
       cmds.text("Chosen File path: " + str(dest))
       cmds.button(label='Publish', command='publishFile()')
-      #cmds.button('publishFile',enable = True)
    else:
       cmds.text("Warning: file cannot be find in the saving directory")
-      #cmds.button('publishFile',enable = False)
 
 def updateVersion():
    os.remove(filePath)
@@ -74,18 +96,21 @@ def cacheFormated(destPath, formate, folderName):
 
 
 # General functions
-def createOptionMenu(name):
+def createOptionMenu(name, list):
    if cmds.optionMenu(name, exists = True):
          cmds.deleteUI(name)
    if (saveMode == True):
-      cmds.optionMenu(name, label= name, changeCommand=nameFile )
+      if (checkingFinalFolder == True):
+         cmds.optionMenu(name, label= name, changeCommand=nameFile)
+      else:
+         cmds.optionMenu(name, label= name, changeCommand=nameFolder)
    if (publishMode == True):
       cmds.optionMenu(name, label= name, changeCommand=checkfileFromWIP) 
-   if not files:
+   if not list:
       cmds.menuItem(label = '')
    else:
       cmds.menuItem(label = '')
-      for i in files:
+      for i in list:
          cmds.menuItem( label= i )
 
 def joinPath(file, newElement):
@@ -95,74 +120,70 @@ def joinPath(file, newElement):
 
 # UI Functions
 # Option menu commands
+def confirm():
+    global prefixPath
+    prefixPath = cmds.textFieldGrp(path, q =True, text = True)
+    print(prefixPath)
+
 def openCharater():
    global folderPath
-   global files
-   assetPath = joinPath(folderPath,"Asset")
-   folderPath = joinPath(assetPath,"Character")
-   if(os.path.isdir(assetPath)):
-      if(os.path.isdir(folderPath)):
-         files = os.listdir(folderPath)
-      else:
-         os.mkdir(folderPath)
-   else:
-      os.mkdir(assetPath)
-      os.mkdir(folderPath)
-   createOptionMenu('Character')
+   global folders
+   typeList = ['anim', 'model', 'rig', 'surfacing']
+   folderPath = joinPath(folderPath,"Asset/Character")
+   pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
+   folders = os.listdir(folderPath)
+   createOptionMenu('Character', folders)
+   for text in typeList:
+      name = 'Character ' + text
+      cmds.button(label = name, command=partial(folderButton,text))
 
 def openProp():
    global folderPath
-   global files
-   assetPath = joinPath(folderPath, "Asset")
-   folderPath = joinPath(assetPath, "Prop")
-   if(os.path.isdir(assetPath)):
-      if(os.path.isdir(folderPath)):
-         files = os.listdir(folderPath)
-      else:
-         os.mkdir(folderPath)
-   else:
-      os.mkdir(assetPath)
-      os.mkdir(folderPath)
-   createOptionMenu('Prop')
+   global folders
+   typeList = ['model', 'rig', 'surfacing']
+   folderPath = joinPath(folderPath, "Asset/Prop")
+   pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
+   folders = os.listdir(folderPath)
+   createOptionMenu('Prop', folders)
+   for text in typeList:
+      name = 'Prop ' + text
+      cmds.button(label = name, command=partial(folderButton,text))
 
 def openSet():
    global folderPath
-   global files
-   assetPath = joinPath(folderPath, "Asset")
-   folderPath = joinPath(assetPath, "Set")
-   if(os.path.isdir(assetPath)):
-      if(os.path.isdir(folderPath) == False):
-         os.mkdir(folderPath)
-      else:
-         files = os.listdir(folderPath)
-   else:
-      os.mkdir(assetPath)
-      os.mkdir(folderPath)
-   createOptionMenu('Set')
+   global folders
+   typeList = ['model']
+   folderPath = joinPath(folderPath, "Asset/Set")
+   pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
+   folders = os.listdir(folderPath)
+   createOptionMenu('Set', folders)
+   for text in typeList:
+      name = 'Set ' + text
+      cmds.button(label = name, command=partial(folderButton,text))
 
 def openSetPiece():
    global folderPath
-   global files
-   assetPath = joinPath(folderPath, "Asset")
-   folderPath = joinPath(assetPath, "SetPiece")
-   if(os.path.isdir(assetPath)):
-      if(os.path.isdir(folderPath) == False):
-         os.mkdir(folderPath)
-      else:
-         files = os.listdir(folderPath)
-   else:
-      os.mkdir(assetPath)
-      os.mkdir(folderPath)
-   createOptionMenu('SetPiece')
+   global folders
+   typeList = ['model', 'surfacing']
+   folderPath = joinPath(folderPath, "Asset/SetPiece")
+   pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
+   folders = os.listdir(folderPath)
+   createOptionMenu('SetPiece', folders)
+   for text in typeList:
+      name = 'Set Piece ' + text
+      cmds.button(label = name, command=partial(folderButton,text))
 
 def openSequence():
    global folderPath
-   global files
+   global folders
+   typeList = ['animation', 'layout', 'light']
    folderPath = joinPath(folderPath,"Sequence")
-   if(os.path.isdir(folderPath) == False):
-      os.mkdir(folderPath)
-      files = os.listdir(folderPath)
-   createOptionMenu('Sequence')   
+   pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
+   folders = os.listdir(folderPath)
+   createOptionMenu('Sequence', folders)
+   for text in typeList:
+      name = 'Sequence ' + text
+      cmds.button(label = name, command=partial(folderButton,text))
 
 def select():
    global path
@@ -177,6 +198,7 @@ def saveFile():
    global folderPath
    global fileName
    global saveMode
+   global checkingFinalFolder
    fileName = cmds.textFieldGrp('fileName', q=True, text = True)
    customPth = joinPath(folderPath, fileName) 
    cmds.file(rename = customPth)
@@ -184,6 +206,7 @@ def saveFile():
    folderPath = ''
    fileName = ''
    saveMode = False
+   checkingFinalFolder = False
    cmds.deleteUI('save_window')
    # forward slash in save cmds
 
