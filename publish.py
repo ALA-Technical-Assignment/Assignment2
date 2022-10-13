@@ -8,7 +8,6 @@ prefixPath = ''
 folderPath = ''
 filePath = ''
 fileName = ''
-modelName = ''
 files = []
 folders = []
 saveMode = False
@@ -40,36 +39,28 @@ def nameFolder(currentValue):
       cmds.deleteUI('folderName')
    cmds.textFieldGrp('folderName', label = 'Model Name', editable=True, text=currentValue)
 
-def folderButton(typeName, *args):
-   global folderPath
-   global files
-   if(saveMode == True):
-      folder = cmds.textFieldGrp('folderName', q=True, text = True)
-   else:
-      folder = fileName
-   modelFolder = joinPath(folderPath, folder)
-   folderPath = joinPath(modelFolder, typeName)
-   pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
-   files = os.listdir(folderPath)
-   createOptionMenu('Model', files)
-
 
 # Publish window methods
 def checkfileFromWIP(currentValue):
-   global modelName
+   global folderPath
    global filePath
-   modelName = currentValue
-   dest = joinPath(folderPath, currentValue)
-   if(os.path.isfile(dest)):
-      filePath = dest
-      cmds.text("Chosen File path: " + str(dest))
-      cmds.button(label='Publish', command='publishFile()')
+   global fileName
+   if(os.path.exists(folderPath)):
+      if('.mb' in currentValue):
+         fileName = currentValue
+         filePath = joinPath(folderPath, currentValue)
+         cmds.text("Chosen Folder path: " + str(folderPath))
+      else:
+         folderPath = joinPath(folderPath, currentValue)
+         cmds.text("Chosen File path: " + str(folderPath))
+         #cmds.button(label='Publish', command='publishFile()')
    else:
       cmds.text("Warning: file cannot be find in the saving directory")
 
 def updateVersion():
    os.remove(filePath)
    stringList = fileName.split("_")
+   print(stringList)
    stringList[-1] = stringList[-1].replace('.mb','')
    versionArray = [int(i) for i in stringList[-1].split('v') if i.isdigit()]
    if len(versionArray) != 0:
@@ -88,7 +79,7 @@ def cacheFormated(destPath, formate, folderName):
    cache = 'cache' + os.sep + folderName
    cacheFolder = joinPath(destPath, cache)
    pathlib.Path(cacheFolder).mkdir(parents=True, exist_ok=True)
-   if(os.path.isdir(cacheFolder) == False):
+   if(os.path.exists(cacheFolder) == False):
       os.mkdir(cacheFolder)
    customPth = joinPath(cacheFolder, fileName)
    cmds.file(rename = customPth)
@@ -113,6 +104,21 @@ def createOptionMenu(name, list):
       for i in list:
          cmds.menuItem( label= i )
 
+def folderButton(typeName, *args):
+   global folderPath
+   global files
+   if(saveMode == True):
+      folder = cmds.textFieldGrp('folderName', q=True, text = True)
+   else:
+      folder = fileName
+   modelFolder = joinPath(folderPath, folder)
+   folderPath = joinPath(modelFolder, typeName)
+   pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
+   files = os.listdir(folderPath)
+   createOptionMenu('Model', files)
+   if (publishMode == True):
+      cmds.button(label='Publish', command='publishFile()')
+
 def joinPath(file, newElement):
    newPath = pathlib.PurePath(file, newElement)
    return newPath
@@ -123,7 +129,6 @@ def joinPath(file, newElement):
 def confirm():
     global prefixPath
     prefixPath = cmds.textFieldGrp(path, q =True, text = True)
-    print(prefixPath)
 
 def openCharater():
    global folderPath
@@ -203,8 +208,6 @@ def saveFile():
    customPth = joinPath(folderPath, fileName) 
    cmds.file(rename = customPth)
    cmds.file(s=True,f=True, type= "mayaBinary")
-   folderPath = ''
-   fileName = ''
    saveMode = False
    checkingFinalFolder = False
    cmds.deleteUI('save_window')
@@ -233,9 +236,6 @@ def publishFile():
    cmds.file(rename = customPth)
    cmds.file(s=True,f=True, type= "mayaBinary")
    updateVersion()
-   fileName = ''
-   filePath = ''
-   folderPath = ''
    publishMode = False
    cmds.deleteUI('publish_window')
 
@@ -251,7 +251,7 @@ def save_window():
    global folderPath
    saveMode = True
    folderPath = joinPath(prefixPath, "wip")
-   if(os.path.isdir(folderPath) == False):
+   if(os.path.exists(folderPath) == False):
       os.mkdir(folderPath)
    if cmds.window('save_publish_init', exists = True):
       cmds.deleteUI('save_publish_init')
@@ -290,7 +290,7 @@ def publish_window():
    publishMode = True
    folderPath = joinPath(prefixPath, "wip")
    destPath = joinPath(prefixPath, "publish")
-   if(os.path.isdir(destPath) == False):
+   if(os.path.exists(destPath) == False):
       os.mkdir(destPath)
    if cmds.window('save_publish_init', exists = True):
       cmds.deleteUI('save_publish_init')
