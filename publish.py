@@ -75,15 +75,21 @@ def updateVersion():
    cmds.file(rename = customPath)
    cmds.file(s=True,f=True, type= "mayaBinary")
 
-def cacheFormated(destPath, formate, folderName):
+def cacheFormated(destPath, folderName):
    cache = 'cache' + os.sep + folderName
    cacheFolder = joinPath(destPath, cache)
    pathlib.Path(cacheFolder).mkdir(parents=True, exist_ok=True)
    if(os.path.exists(cacheFolder) == False):
       os.mkdir(cacheFolder)
    customPth = joinPath(cacheFolder, fileName)
-   cmds.file(rename = customPth)
-   cmds.file(s=True,f=True, type= formate)
+   if (folderName == 'fbx'):
+      cmds.file(rename = customPth)
+      cmds.file(s=True, f=True, type= "FBX export")
+   if (folderName == 'abc'):
+      start = 0
+      end = 120
+      command = "-frameRange " + start + " " + end + " -file " + customPth
+      cmds.AbcExport ( j = command )
 
 
 # General functions
@@ -134,7 +140,7 @@ def openCharater():
    global folderPath
    global folders
    typeList = ['anim', 'model', 'rig', 'surfacing']
-   folderPath = joinPath(folderPath,"Asset/Character")
+   folderPath = joinPath(prefixPath,"Asset/Character")
    pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
    folders = os.listdir(folderPath)
    createOptionMenu('Character', folders)
@@ -146,7 +152,7 @@ def openProp():
    global folderPath
    global folders
    typeList = ['model', 'rig', 'surfacing']
-   folderPath = joinPath(folderPath, "Asset/Prop")
+   folderPath = joinPath(prefixPath, "Asset/Prop")
    pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
    folders = os.listdir(folderPath)
    createOptionMenu('Prop', folders)
@@ -158,7 +164,7 @@ def openSet():
    global folderPath
    global folders
    typeList = ['model']
-   folderPath = joinPath(folderPath, "Asset/Set")
+   folderPath = joinPath(prefixPath, "Asset/Set")
    pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
    folders = os.listdir(folderPath)
    createOptionMenu('Set', folders)
@@ -170,7 +176,7 @@ def openSetPiece():
    global folderPath
    global folders
    typeList = ['model', 'surfacing']
-   folderPath = joinPath(folderPath, "Asset/SetPiece")
+   folderPath = joinPath(prefixPath, "Asset/SetPiece")
    pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
    folders = os.listdir(folderPath)
    createOptionMenu('SetPiece', folders)
@@ -182,7 +188,7 @@ def openSequence():
    global folderPath
    global folders
    typeList = ['animation', 'layout', 'light']
-   folderPath = joinPath(folderPath,"Sequence")
+   folderPath = joinPath(prefixPath,"Sequence")
    pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
    folders = os.listdir(folderPath)
    createOptionMenu('Sequence', folders)
@@ -220,7 +226,7 @@ def publishFile():
    global filePath
    global folderPath
    global publishMode
-   length = len(str(prefixPath).split(os.sep))
+   length = len(str(prefixPath).split(os.sep))-1
    dest = str(filePath).split(os.sep)
    dest[dest.index("wip",length)] = 'publish'
    dest = os.sep.join(dest)
@@ -228,10 +234,10 @@ def publishFile():
    pathlib.Path(dest).mkdir(parents=True, exist_ok=True)
    fbx = cmds.checkBox('FBX', query=True, value=True)
    abc = cmds.checkBox('Alembic', query=True, value=True)
-   if (fbx == True):
-      cacheFormated(dest, "FBX", "fbx")
-   if (abc == True):
-      cacheFormated(dest, "alembic", "abc")
+   if (fbx):
+      cacheFormated(dest, 'fbx')
+   if (abc):
+      cacheFormated(dest, 'abc')
    customPth = joinPath(dest, fileName) 
    cmds.file(rename = customPth)
    cmds.file(s=True,f=True, type= "mayaBinary")
@@ -240,17 +246,19 @@ def publishFile():
    cmds.deleteUI('publish_window')
 
 def saveWindowCancel():
-   print("test")
+   if cmds.window('save_window', exists = True):
+      cmds.deleteUI('save_window')
 
 def publishWindowCancel():
-   print("test")
+   if cmds.window('publish_window', exists = True):
+      cmds.deleteUI('publish_window')
 
 # Windows
 def save_window():
    global saveMode
-   global folderPath
+   global prefixPath
    saveMode = True
-   folderPath = joinPath(prefixPath, "wip")
+   prefixPath = joinPath(prefixPath, "wip")
    if(os.path.exists(folderPath) == False):
       os.mkdir(folderPath)
    if cmds.window('save_publish_init', exists = True):
@@ -279,21 +287,23 @@ def save_window():
    cmds.separator(h=30)
 
    cmds.button( label='Save', command='saveFile()')
-
+   cmds.button( label='Cancel', command='saveWindowCancel()')
    
    cmds.showWindow('save_window')
 
 
 def publish_window():
-   global folderPath
+   global prefixPath
    global publishMode
    publishMode = True
-   folderPath = joinPath(prefixPath, "wip")
+   prefixPath = joinPath(prefixPath, "wip")
    destPath = joinPath(prefixPath, "publish")
    if(os.path.exists(destPath) == False):
       os.mkdir(destPath)
    if cmds.window('save_publish_init', exists = True):
       cmds.deleteUI('save_publish_init')
+   if cmds.window('publish_window', exists = True):
+      cmds.deleteUI('publish_window')
    cmds.window('publish_window', resizeToFitChildren=True)
    cmds.scrollLayout()
 
@@ -320,6 +330,8 @@ def publish_window():
    cmds.checkBox("Alembic", l="Alembic Format")
 
    cmds.separator(h=10)
+
+   cmds.button( label='Cancel', command='publishWindowCancel()')
 
    cmds.showWindow('publish_window')
 
