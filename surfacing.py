@@ -1,100 +1,82 @@
 import maya.cmds as cmds
 import json
+import pathlib
+import os
 
-#find material in object
-def getMaterialFromObject(target):
-    shadeEng = cmds.listConnections(target , type = "shadingEngine")
-    materials = cmds.ls(mc.listConnections(shadeEng ), materials = True)
-    return materials
-
-#export selected material into Maya Binary
-#select all the material you want to export first
-# then export it 
-cmds.file("D:/Uni/TD/asd/s.mb",op = "v=0",typ="mayaBinary",pr=True,es=True)
-
-#set material to object
-cmds.sets(e=True, forceElement="standardSurface1SG");
-
-#create and write to json
-with  open('D:/Uni/TD/new_file.json','w') as f:
-    json.dump('Will be inside json',f)
-
-
-#var lastImported
-#var latestVersionTextBox
-
-#def MaterialExportAllfromObject():
-    #deselect all
-    #select all object in scene
-    #create dictionary to store object name and corresponding material
-    #for each object in scene
-        #select its material (get the material, and then select it with tgl on)
-        #write into the dictionary "objectName  = materialName "
-    #var Name = MaterialGenerateName()
-    #export as mb into correct folder with Name
-    #convert dictionary into json and put in same folder as exported mb with correct name
-    #show dialogue box where it's located and whether to show it in explorer
-
+#-------------------------------------------------------------------------------------------------Surfacing-----------------------------------------------------------------------------------------
+# Publish materials
+def PublishMaterial():
+    objects = list(filter(lambda object: not('_grp' in object), cmds.listRelatives(cmds.ls(o = True), ad= True, typ = 'transform')))
+    JsonFile = {}
+    for object in objects:
+        material = GetMaterialFromObject(object)
+        if (material):
+            cmds.select(material, add = True)
+        JsonFile.update ({object : material})
+    Path = GetPublishPath(GenerateShaderName())
+    if (Path):
+        cmds.file(Path ,op = "v=0",typ="mayaBinary",pr=True,es=True)
+        with open(Path+'.json', 'w') as outfile:
+            json.dump(JsonFile, outfile, indent = 4)
+        print ('Success! published into: \n'+ Path)
+    else:
+        print ('Not in WIP')
     #update latestVersionTextBox using MaterialFindlatestVer();
 
-#def ExportMaterialFromObject(Objects)
-    #create dictionary to store object name and corresponding material
-    #for each Objects
-        #select its material (get the material, and then select it with tgl on)
-        #write into the dictionary "objectName  = materialName "
-    #var Name = MaterialGenerateName()
-    #export as mb into correct folder with Name
-    #convert dictionary into json and put in same folder as exported mb with correct name
-    #show dialogue box where it's located and whether to show it in explorer
+def GetMaterialFromObject(target):
+    shape = cmds.listRelatives ( target, shapes=True )
+    shadingEngine = cmds.listConnections (shape, source=False, destination=True)
+    materials = cmds.ls(cmds.listConnections(shadingEngine ), materials = True)
+    if (materials[0] != 'initialShadingGroup'):
+        return materials[0]
+    return None
 
-#def MaterialImportAllLatestVersion():
-    #for each 
-    #importFrom("fileName_material_" + MaterialFindlatestVer())
+def GenerateShaderName():
+    AllParts = pathlib.PurePath(cmds.file(q=True, sn=True)).parts
+    Name = AllParts[AllParts.index('surfacing')-1]
+    return Name + "_shaders_v" + str(GetlatestVerInPath(GetCurrentPath())).zfill(3) 
 
-#def MaterialImportSpecificVersion()
-    # var returnedFile = show dialogue box to select file (filter, only mb, open material folder)
-    #MaterialImport(returnedFile)
+def GetCurrentPath():
+    path  =  pathlib.PurePath(cmds.file(q=True, sn=True))
+    return os.path.join(*path.parts [:-1])
 
-#def MaterialGenerateName():
-    #get file and folder name
-    #return fileName +"_material_" + MaterialFindlatestVer()
 
-#def MaterialImport(file)
-    #var succesfulImportMaterial
-    #check if JSON exist 
-        #show dialogue box if no json with MB
-    #import mb
-    #read json
-    #for each line
-        #get object in line
-        #if found
-            #assign materialName to objectName
-            #succesfulImportMaterial ++
-    #if succesfulImportMaterial==number of line in Json
-        #dialogue box, Successful! all material exported
-    #else
-        #dialogue box, Not all material succesfully imported. (differnece) fail to import. Perhaps some object renamed and/or wrong version
+def GetlatestVerInPath(path):
+    filesInPath = [f for f in os.listdir(path) if os.path.join(path, f)[-3:] == '.mb']
+    currentVersion = 0;
+    for fil in filesInPath:
+        ver = int(fil[-6:-3])
+        if ver > currentVersion:
+           currentVersion  = ver
+    return currentVersion
 
-#def MaterialFindlatestVer():
-    #go to folder of material
-    #var currentVersion = 0;
-    #check all file in material folder
-        #materialVar = some string manipulation to find ver
-        #if materialVer > currentVersion;
-            #currentVersion  = materialVer
-    #return currentVersion
+def GetPublishPath(Name):
+    AllParts = pathlib.PurePath(cmds.file(q=True, sn=True)).parts
+    if not 'wip' in AllParts:
+        return None
+    else:
+        Path = AllParts[:AllParts.index('surfacing')+1]
+        print (os.path.join(*Path))
+        Path = Path[:AllParts.index('wip')]+('publish',)+Path[AllParts.index('wip')+1:] #this is big brain as hell, wow
+        if not os.path.exists(os.path.join(*Path+('textures',))):
+            os.makedirs(os.path.join(*Path+('textures',)))
+        return (os.path.join(*Path + ('textures',Name)))
 
-#def main():
-    #latestVersionTextBox = textbox => Latest Material Version => MaterialFindlatestVer()
 
-    #section material export "Surfacing"
-    #button =>  Publish => MaterialExportAllfromObject()
 
-    #section material Import "Lighting"
-    #textbox => Last Imported => lastimported
-    #button=> Import All published material into scene (latest) => MaterialImportAllLatestVersion()
-    ####button=> Import Specific Version => MaterialImportSpecificVersion()
+#-------------------------------------------------------------------------------------------------lighting-----------------------------------------------------------------------------------------
 
-    
 
-#main
+def setMaterial(object, material):
+    cmds.select(object, r = True )
+    cmds.sets(e=True, forceElement = material);
+# load all  material
+
+
+#HUD AND UI
+
+
+# Additional feature
+
+# individual loading of material based on version
+
