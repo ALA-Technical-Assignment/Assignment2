@@ -248,7 +248,7 @@ def saveWindowCancel():
 def publishWindowCancel():
    if cmds.window('publish_window', exists = True):
       cmds.deleteUI('publish_window')
-   save_publish_init
+   save_publish_init()
    
 
 def exitButton():
