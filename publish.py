@@ -53,7 +53,6 @@ def checkfileFromWIP(currentValue):
       else:
          folderPath = joinPath(folderPath, currentValue)
          cmds.text("Chosen File path: " + str(folderPath))
-         #cmds.button(label='Publish', command='publishFile()')
    else:
       cmds.text("Warning: file cannot be find in the saving directory")
 
@@ -217,14 +216,10 @@ def saveFile():
    saveMode = False
    checkingFinalFolder = False
    cmds.deleteUI('save_window')
-   # forward slash in save cmds
 
 def publishFile():
-   # os path split / os sep
-   # check index of last wip
    global fileName
    global filePath
-   global folderPath
    global publishMode
    length = len(str(prefixPath).split(os.sep))-1
    dest = str(filePath).split(os.sep)
@@ -248,10 +243,17 @@ def publishFile():
 def saveWindowCancel():
    if cmds.window('save_window', exists = True):
       cmds.deleteUI('save_window')
+   save_publish_init()
 
 def publishWindowCancel():
    if cmds.window('publish_window', exists = True):
       cmds.deleteUI('publish_window')
+   save_publish_init
+   
+
+def exitButton():
+   if cmds.window('save_publish_init', exists = True):
+      cmds.deleteUI('save_publish_init')
 
 # Windows
 def save_window():
@@ -259,8 +261,8 @@ def save_window():
    global prefixPath
    saveMode = True
    prefixPath = joinPath(prefixPath, "wip")
-   if(os.path.exists(folderPath) == False):
-      os.mkdir(folderPath)
+   if(os.path.exists(prefixPath) == False):
+      os.mkdir(prefixPath)
    if cmds.window('save_publish_init', exists = True):
       cmds.deleteUI('save_publish_init')
    if cmds.window('save_window', exists = True):
@@ -340,13 +342,14 @@ def save_publish_init():
    if cmds.window('save_publish_init', exists = True):
       cmds.deleteUI('save_publish_init')
    cmds.window('save_publish_init', resizeToFitChildren=True)
-   cmds.scrollLayout()
+   cmds.columnLayout()
 
    global path
    cmds.button(label = 'Select File', command = 'select()')
    cmds.button(label = 'Confirm', command = 'confirm()')
    cmds.button(label = 'Save', command = 'save_window()')
    cmds.button(label = 'Publish', command = 'publish_window()')
+   cmds.button(label = 'Exit', command = 'exitButton()')
 
    cmds.showWindow('save_publish_init')
 
