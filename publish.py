@@ -37,7 +37,7 @@ def nameFolder(currentValue):
    checkingFinalFolder = True
    if cmds.textFieldGrp('folderName', exists = True):
       cmds.deleteUI('folderName')
-   cmds.textFieldGrp('folderName', label = 'Model Name', editable=True, text=currentValue)
+   cmds.textFieldGrp('folderName', label = 'Model Folder Name', editable=True, text=currentValue)
 
 
 # Publish window methods
@@ -55,24 +55,6 @@ def checkfileFromWIP(currentValue):
          cmds.text("Chosen File path: " + str(folderPath))
    else:
       cmds.text("Warning: file cannot be find in the saving directory")
-
-def updateVersion():
-   os.remove(filePath)
-   stringList = fileName.split("_")
-   print(stringList)
-   stringList[-1] = stringList[-1].replace('.mb','')
-   versionArray = [int(i) for i in stringList[-1].split('v') if i.isdigit()]
-   if len(versionArray) != 0:
-      versionNo = versionArray[0]+1
-      stringList.pop(-1)
-      print(stringList)
-      updateNo = '_v' + f'{versionNo:03d}'
-      updateVersion = '_'.join(stringList) + updateNo
-   else:
-      updateVersion = fileName + '_v001'
-   customPath = joinPath(folderPath, updateVersion) 
-   cmds.file(rename = customPath)
-   cmds.file(s=True,f=True, type= "mayaBinary")
 
 def cacheFormated(destPath, folderName):
    cache = 'cache' + os.sep + folderName
@@ -99,6 +81,9 @@ def createOptionMenu(name, list):
       if (checkingFinalFolder == True):
          cmds.optionMenu(name, label= name, changeCommand=nameFile)
       else:
+         cmds.separator(h=10)
+         cmds.text('Please select a model folder first')
+         cmds.separator(h=10)
          cmds.optionMenu(name, label= name, changeCommand=nameFolder)
    if (publishMode == True):
       cmds.optionMenu(name, label= name, changeCommand=checkfileFromWIP) 
@@ -127,6 +112,24 @@ def folderButton(typeName, *args):
 def joinPath(file, newElement):
    newPath = pathlib.PurePath(file, newElement)
    return newPath
+
+def updateVersion():
+   os.remove(filePath)
+   stringList = fileName.split("_")
+   print(stringList)
+   stringList[-1] = stringList[-1].replace('.mb','')
+   versionArray = [int(i) for i in stringList[-1].split('v') if i.isdigit()]
+   if len(versionArray) != 0:
+      versionNo = versionArray[0]+1
+      stringList.pop(-1)
+      print(stringList)
+      updateNo = '_v' + f'{versionNo:03d}'
+      updateVersion = '_'.join(stringList) + updateNo
+   else:
+      updateVersion = fileName + '_v001'
+   customPath = joinPath(folderPath, updateVersion) 
+   cmds.file(rename = customPath)
+   cmds.file(s=True,f=True, type= "mayaBinary")
 
 
 # UI Functions
@@ -216,6 +219,7 @@ def saveFile():
    saveMode = False
    checkingFinalFolder = False
    cmds.deleteUI('save_window')
+   save_publish_init()
 
 def publishFile():
    global fileName
@@ -239,6 +243,7 @@ def publishFile():
    updateVersion()
    publishMode = False
    cmds.deleteUI('publish_window')
+   save_publish_init()
 
 def saveWindowCancel():
    if cmds.window('save_window', exists = True):
@@ -299,13 +304,13 @@ def publish_window():
    global publishMode
    publishMode = True
    prefixPath = joinPath(prefixPath, "wip")
-   destPath = joinPath(prefixPath, "publish")
-   if(os.path.exists(destPath) == False):
-      os.mkdir(destPath)
    if cmds.window('save_publish_init', exists = True):
       cmds.deleteUI('save_publish_init')
    if cmds.window('publish_window', exists = True):
       cmds.deleteUI('publish_window')
+   destPath = joinPath(prefixPath, "publish")
+   if(os.path.exists(destPath) == False):
+      os.mkdir(destPath)
    cmds.window('publish_window', resizeToFitChildren=True)
    cmds.scrollLayout()
 
