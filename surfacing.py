@@ -6,19 +6,35 @@ import os
 #-------------------------------------------------------------------------------------------------Surfacing-----------------------------------------------------------------------------------------
 # Publish materials
 def PublishMaterial():
-    objects = list(filter(lambda object: not('_grp' in object), cmds.listRelatives(cmds.ls(o = True), ad= True, typ = 'transform')))
-    JsonFile = {}
-    for object in objects:
-        material = GetMaterialFromObject(object)
-        if (material):
-            cmds.select(material, add = True)
-        JsonFile.update ({object : material})
-    Path = GetPublishPath(GenerateShaderName())
-    if (Path):
-        cmds.file(Path ,op = "v=0",typ="mayaBinary",pr=True,es=True)
-        with open(Path+'.json', 'w') as outfile:
-            json.dump(JsonFile, outfile, indent = 4)
-        print ('Success! published into: \n'+ Path)
+    if ('wip' in cmds.file(q=True, sn=True)):
+        JsonFile = {}
+        materialsTMP = {}
+        
+        SaveNewVersion()
+        
+        MaterialPath = GetPublishPath(GenerateName('shader', GetlatestVerInPath(GetCurrentPath())), 'material')
+        SourcePath = GetPublishPath(GenerateName('surfacing', GetlatestVerInPath(GetCurrentPath())), 'source')
+        newVer = cmds.file(q=True, sn=True)
+        
+        objects = list(filter(lambda object: not('_grp' in object), cmds.listRelatives(cmds.ls(o = True), ad= True, typ = 'transform')))
+        for object in objects:
+            material = GetMaterialFromObject(object)
+            if (material):
+                cmds.select(material, add = True)
+                modif = (GetName()+'_'+material)
+                cmds.rename (material, modif )
+                materialsTMP.update({material : modif})
+                JsonFile.update ({object : modif})
+        cmds.file(MaterialPath ,op = "v=0",typ="mayaBinary",pr=True,es=True) #publish only material
+        for mat in materialsTMP:
+            cmds.rename (materialsTMP[mat],mat )
+            
+        SaveAs(SourcePath) #publish the surfacing file
+        cmds.file( newVer, o=True ) #return back to WIP
+        with open(MaterialPath+'.json', 'w') as outfile: #publich Json File
+            json.dump(JsonFile, outfile, indent = 4)   
+            
+        print ('Success! published into: \n'+ MaterialPath)
     else:
         print ('Not in WIP')
     #update latestVersionTextBox using MaterialFindlatestVer();
@@ -32,15 +48,28 @@ def GetMaterialFromObject(target):
         return materials[0]
     return None
 
-def GenerateShaderName():
+def GenerateName(sub,ver):
+    Name = GetName()
+    return Name + "_"+sub+".v" + str(ver).zfill(3) 
+
+def GetName():
     AllParts = pathlib.PurePath(cmds.file(q=True, sn=True)).parts
-    Name = AllParts[AllParts.index('surfacing')-1]
-    return Name + "_shaders_v" + str(GetlatestVerInPath(GetCurrentPath())).zfill(3) 
+    return AllParts[AllParts.index('surfacing')-1]
 
 def GetCurrentPath():
-    path  =  pathlib.PurePath(cmds.file(q=True, sn=True))
-    return os.path.join(*path.parts [:-1])
+    return os.path.join(*pathlib.PurePath(cmds.file(q=True, sn=True)).parts[:-1])
 
+def GetCurrentName():
+    return os.path.join(*pathlib.PurePath(cmds.file(q=True, sn=True)).parts[-1:])
+
+def SaveNewVersion():
+    name = cmds.file(q=True, sn=True)
+    SaveAs(name[:-4]+str(GetlatestVerInPath(GetCurrentPath())+1)+name[-3:])
+    return name[:-4]+str(GetlatestVerInPath(GetCurrentPath()))+name[-3:]
+    
+def SaveAs(path):
+    cmds.file(rename = path)
+    cmds.file(save = True, type ='mayaBinary')
 
 def GetlatestVerInPath(path):
     filesInPath = [f for f in os.listdir(path) if os.path.join(path, f)[-3:] == '.mb']
@@ -56,19 +85,20 @@ def GetFileInPathWithVer(path, ver):
         if str(ver).zfill(3)+'.mb' in fileInPath:
             return fileInPath     
 
-def GetPublishPath(Name):
+def GetPublishPath(Name, sub):
     AllParts = pathlib.PurePath(cmds.file(q=True, sn=True)).parts
     if not 'wip' in AllParts:
         return None
     else:
         Path = AllParts[:AllParts.index('surfacing')+1]
-        print (os.path.join(*Path))
-        Path = Path[:AllParts.index('wip')]+('publish',)+Path[AllParts.index('wip')+1:] #this is big brain as hell, wow
-        if not os.path.exists(os.path.join(*Path+('textures',))):
-            os.makedirs(os.path.join(*Path+('textures',)))
-        return (os.path.join(*Path + ('textures',Name)))
+        #print (os.path.join(*Path))
+        Path = Path[:AllParts.index('wip')]+('publish',)+Path[AllParts.index('wip')+1:] #replace wip to publish
+        if not os.path.exists(os.path.join(*Path+(sub,))):
+            os.makedirs(os.path.join(*Path+(sub,)))
+        return (os.path.join(*Path + (sub,Name)))
 
-#PublishMaterial()
+
+PublishMaterial()
 
 #-------------------------------------------------------------------------------------------------lighting-----------------------------------------------------------------------------------------
 
@@ -127,7 +157,7 @@ def GetContentFromJson(Path):
     listr = list(JsonTmp.items())
     return(listr)
     
-LoadAllMaterial()
+#LoadAllMaterial()
 
 #GetContentFromJson(r"C:\Users\janse\OneDrive\Documents\maya\projects\Assessment2_GroupX\scenes\publish\assets\prop\truck04\surfacing\textures\truck04_shaders_v002.json")
 #tmp = getSurfacingPath(cmds.ls(sl = True))
