@@ -19,14 +19,16 @@ publishMode = False
 def nameFile(currentValue):
    print("Save File mode")
    stringList = currentValue.split("_")
-   versionArray = [int(i) for i in stringList[-1].split('v') if i.isdigit()]
+   stringList[-1] = stringList[-1].replace('.mb','')
+   stringList = stringList[-1].split('v')
+   versionArray = [int(i) for i in stringList if can_convert_to_int(i)]
    if len(versionArray) != 0:
       versionNo = versionArray[0]+1
       stringList.pop(-1)
-      updateNo = '_v' + f'{versionNo:03d}'
+      updateNo = '.v' + f'{versionNo:03d}'
       updateVersion = '_'.join(stringList) + updateNo
    else:
-      updateVersion = currentValue + '_v001'
+      updateVersion = currentValue + '.v001'
    if cmds.textFieldGrp('fileName', exists = True):
       cmds.deleteUI('fileName')
    cmds.textFieldGrp('fileName', label = 'File Name', editable=True, text=updateVersion)
@@ -69,11 +71,19 @@ def cacheFormated(destPath, folderName):
    if (folderName == 'abc'):
       start = 0
       end = 120
-      command = "-frameRange " + start + " " + end + " -file " + customPth
+      command = "-frameRange " + str(start) + " " + str(end) + " -file " + str(customPth)
       cmds.AbcExport ( j = command )
 
 
 # General functions
+def can_convert_to_int(string):
+    try:
+        int(string)
+
+        return True
+    except ValueError:
+        return False
+
 def createOptionMenu(name, list):
    if cmds.optionMenu(name, exists = True):
          cmds.deleteUI(name)
@@ -116,21 +126,19 @@ def joinPath(file, newElement):
 def updateVersion():
    os.remove(filePath)
    stringList = fileName.split("_")
-   print(stringList)
    stringList[-1] = stringList[-1].replace('.mb','')
-   versionArray = [int(i) for i in stringList[-1].split('v') if i.isdigit()]
+   stringList = stringList[-1].split('v')
+   versionArray = [int(i) for i in stringList if can_convert_to_int(i)]
    if len(versionArray) != 0:
       versionNo = versionArray[0]+1
       stringList.pop(-1)
-      print(stringList)
-      updateNo = '_v' + f'{versionNo:03d}'
+      updateNo = '.v' + f'{versionNo:03d}'
       updateVersion = '_'.join(stringList) + updateNo
    else:
-      updateVersion = fileName + '_v001'
+      updateVersion = fileName + '.v001'
    customPath = joinPath(folderPath, updateVersion) 
    cmds.file(rename = customPath)
    cmds.file(s=True,f=True, type= "mayaBinary")
-
 
 # UI Functions
 # Option menu commands
@@ -273,8 +281,7 @@ def save_window():
    if cmds.window('save_window', exists = True):
       cmds.deleteUI('save_window')
    cmds.window('save_window', resizeToFitChildren=True)
-
-   cmds.scrollLayout()
+   cmds.columnLayout( adjustableColumn=True )
 
    cmds.separator(h=10)
    cmds.text('Asset')
@@ -312,7 +319,7 @@ def publish_window():
    if(os.path.exists(destPath) == False):
       os.mkdir(destPath)
    cmds.window('publish_window', resizeToFitChildren=True)
-   cmds.scrollLayout()
+   cmds.columnLayout( adjustableColumn=True )
 
    cmds.separator(h=10)
    cmds.text('Asset')
@@ -347,13 +354,23 @@ def save_publish_init():
    if cmds.window('save_publish_init', exists = True):
       cmds.deleteUI('save_publish_init')
    cmds.window('save_publish_init', resizeToFitChildren=True)
-   cmds.columnLayout()
+   cmds.columnLayout( adjustableColumn=True )
 
-   global path
-   cmds.button(label = 'Select File', command = 'select()')
+   cmds.separator(h=30)
+   cmds.text(label = 'Set Folder', fn = 'boldLabelFont')
+   cmds.separator(h=10)
+
+   cmds.button(label = 'Select Folder', command = 'select()')
    cmds.button(label = 'Confirm', command = 'confirm()')
+
+   cmds.separator(h=10)
+   cmds.text(label = 'Save and Publish Functions', fn = 'boldLabelFont')
+   cmds.separator(h=10)
+
    cmds.button(label = 'Save', command = 'save_window()')
    cmds.button(label = 'Publish', command = 'publish_window()')
+
+   cmds.separator(h=10)
    cmds.button(label = 'Exit', command = 'exitButton()')
 
    cmds.showWindow('save_publish_init')
