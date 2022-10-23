@@ -20,7 +20,7 @@ def nameFile(currentValue):
    print("Save File mode")
    stringList = currentValue.split("_")
    stringList[-1] = stringList[-1].replace('.mb','')
-   stringList = stringList[-1].split('v')
+   stringList = stringList[-1].split('.v')
    versionArray = [int(i) for i in stringList if can_convert_to_int(i)]
    if len(versionArray) != 0:
       versionNo = versionArray[0]+1
@@ -37,6 +37,8 @@ def nameFolder(currentValue):
    global folderPath
    global checkingFinalFolder
    checkingFinalFolder = True
+   if (currentValue == ''):
+      currentValue = 'NewDocument'
    if cmds.textFieldGrp('folderName', exists = True):
       cmds.deleteUI('folderName')
    cmds.textFieldGrp('folderName', label = 'Model Folder Name', editable=True, text=currentValue)
@@ -92,7 +94,7 @@ def createOptionMenu(name, list):
          cmds.optionMenu(name, label= name, changeCommand=nameFile)
       else:
          cmds.separator(h=10)
-         cmds.text('Please select a model folder first')
+         cmds.text('Please choose model folder first before pressing following buttons(\'Character/Prop/Set/SetPiece/Sequence\')')
          cmds.separator(h=10)
          cmds.optionMenu(name, label= name, changeCommand=nameFolder)
    if (publishMode == True):
@@ -127,7 +129,7 @@ def updateVersion():
    os.remove(filePath)
    stringList = fileName.split("_")
    stringList[-1] = stringList[-1].replace('.mb','')
-   stringList = stringList[-1].split('v')
+   stringList = stringList[-1].split('.v')
    versionArray = [int(i) for i in stringList if can_convert_to_int(i)]
    if len(versionArray) != 0:
       versionNo = versionArray[0]+1
@@ -211,28 +213,21 @@ def select():
    path = cmds.fileDialog2(fileMode=3)[0]
    if cmds.textFieldGrp('Prefix', exists = True):
       cmds.deleteUI('Prefix')
+   cmds.separator(h = 10)
+   cmds.text("Path Selected")
    path = cmds.textFieldGrp('Prefix', label = 'Folder Path:', text=path,editable=True)
    
 
 # Button commands
 def saveFile():
-   global folderPath
-   global fileName
-   global saveMode
-   global checkingFinalFolder
    fileName = cmds.textFieldGrp('fileName', q=True, text = True)
    customPth = joinPath(folderPath, fileName) 
    cmds.file(rename = customPth)
    cmds.file(s=True,f=True, type= "mayaBinary")
-   saveMode = False
-   checkingFinalFolder = False
    cmds.deleteUI('save_window')
    save_publish_init()
 
 def publishFile():
-   global fileName
-   global filePath
-   global publishMode
    length = len(str(prefixPath).split(os.sep))-1
    dest = str(filePath).split(os.sep)
    dest[dest.index("wip",length)] = 'publish'
@@ -249,7 +244,6 @@ def publishFile():
    cmds.file(rename = customPth)
    cmds.file(s=True,f=True, type= "mayaBinary")
    updateVersion()
-   publishMode = False
    cmds.deleteUI('publish_window')
    save_publish_init()
 
@@ -302,6 +296,8 @@ def save_window():
 
    cmds.button( label='Save', command='saveFile()')
    cmds.button( label='Cancel', command='saveWindowCancel()')
+
+   cmds.separator(h=20)
    
    cmds.showWindow('save_window')
 
@@ -347,10 +343,33 @@ def publish_window():
 
    cmds.button( label='Cancel', command='publishWindowCancel()')
 
+   cmds.separator(h=20)
+
    cmds.showWindow('publish_window')
 
 
 def save_publish_init():
+   global path
+   global prefixPath
+   global folderPath
+   global filePath
+   global fileName
+   global files
+   global folders
+   global saveMode
+   global checkingFinalFolder
+   global publishMode
+   path = ''
+   prefixPath = ''
+   folderPath = ''
+   filePath = ''
+   fileName = ''
+   files = []
+   folders = []
+   saveMode = False
+   checkingFinalFolder = False
+   publishMode = False
+   
    if cmds.window('save_publish_init', exists = True):
       cmds.deleteUI('save_publish_init')
    cmds.window('save_publish_init', resizeToFitChildren=True)
