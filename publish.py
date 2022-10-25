@@ -14,11 +14,15 @@ def nameFile(currentValue):
 def nameFolder(currentValue):
    global folderPath
    global checkingFinalFolder
+   global menuCheck
    checkingFinalFolder = True
    if (currentValue == ''):
       currentValue = 'NewDocument'
+      menuCheck = True
    if cmds.textFieldGrp('folderName', exists = True):
       cmds.deleteUI('folderName')
+   if cmds.textFieldGrp('fileName', exists = True):
+      cmds.deleteUI('fileName')
    cmds.textFieldGrp('folderName', label = 'Model Folder Name', editable=True, text=currentValue)
 
 
@@ -73,7 +77,9 @@ def can_convert_to_int(string):
 def versionUpdate(currentValue):
    stringList = currentValue.split("_")
    stringList[-1] = stringList[-1].replace('.mb','')
-   stringList = stringList[-1].split('.v')
+   version = stringList.pop(-1).split('.v')
+   for i in version:
+      stringList.append(i)
    versionArray = [int(i) for i in stringList if can_convert_to_int(i)]
    if len(versionArray) != 0:
       versionNo = versionArray[0]+1
@@ -116,8 +122,10 @@ def folderButton(typeName, *args):
       folder = fileName
    modelFolder = joinPath(folderPath, folder)
    folderPath = joinPath(modelFolder, typeName)
-   pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
-   files = os.listdir(folderPath)
+   print(menuCheck)
+   if (menuCheck == True):
+      pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
+   files = os.listdir(folderPath)   
    createOptionMenu('Model', files)
    if (publishMode == True):
       cmds.button(label='Publish', command='publishFile()')
@@ -136,7 +144,7 @@ def openCharater():
    global folderPath
    global folders
    typeList = ['anim', 'model', 'rig', 'surfacing']
-   folderPath = joinPath(prefixPath,"Asset/Character")
+   folderPath = joinPath(prefixPath,"assets/character")
    pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
    folders = os.listdir(folderPath)
    createOptionMenu('Character', folders)
@@ -148,7 +156,7 @@ def openProp():
    global folderPath
    global folders
    typeList = ['model', 'rig', 'surfacing']
-   folderPath = joinPath(prefixPath, "Asset/Prop")
+   folderPath = joinPath(prefixPath, "assets/prop")
    pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
    folders = os.listdir(folderPath)
    createOptionMenu('Prop', folders)
@@ -160,7 +168,7 @@ def openSet():
    global folderPath
    global folders
    typeList = ['model']
-   folderPath = joinPath(prefixPath, "Asset/Set")
+   folderPath = joinPath(prefixPath, "assets/set")
    pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
    folders = os.listdir(folderPath)
    createOptionMenu('Set', folders)
@@ -172,7 +180,7 @@ def openSetPiece():
    global folderPath
    global folders
    typeList = ['model', 'surfacing']
-   folderPath = joinPath(prefixPath, "Asset/SetPiece")
+   folderPath = joinPath(prefixPath, "assets/setpiece")
    pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
    folders = os.listdir(folderPath)
    createOptionMenu('SetPiece', folders)
@@ -184,7 +192,7 @@ def openSequence():
    global folderPath
    global folders
    typeList = ['animation', 'layout', 'light']
-   folderPath = joinPath(prefixPath,"Sequence")
+   folderPath = joinPath(prefixPath,"sequence")
    pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
    folders = os.listdir(folderPath)
    createOptionMenu('Sequence', folders)
@@ -204,6 +212,7 @@ def select():
 
 # Button commands
 def saveFile():
+   pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
    fileName = cmds.textFieldGrp('fileName', q=True, text = True)
    customPth = joinPath(folderPath, fileName) 
    cmds.file(rename = customPth)
@@ -295,9 +304,6 @@ def publish_window():
       cmds.deleteUI('save_publish_init')
    if cmds.window('publish_window', exists = True):
       cmds.deleteUI('publish_window')
-   destPath = joinPath(prefixPath, "publish")
-   if(os.path.exists(destPath) == False):
-      os.mkdir(destPath)
    cmds.window('publish_window', resizeToFitChildren=True, t= 'Publish Windows')
    cmds.columnLayout( adjustableColumn=True )
 
@@ -341,8 +347,9 @@ def save_publish_init():
    global files
    global folders
    global saveMode
-   global checkingFinalFolder
    global publishMode
+   global checkingFinalFolder
+   global menuCheck
    path = ''
    prefixPath = ''
    folderPath = ''
@@ -353,6 +360,8 @@ def save_publish_init():
    saveMode = False
    checkingFinalFolder = False
    publishMode = False
+   menuCheck = False
+   
    
    if cmds.window('save_publish_init', exists = True):
       cmds.deleteUI('save_publish_init')
