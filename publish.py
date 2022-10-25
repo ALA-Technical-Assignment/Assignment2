@@ -3,35 +3,13 @@ import os
 import pathlib
 from functools import partial
 
-path = ''
-prefixPath = ''
-folderPath = ''
-filePath = ''
-fileName = ''
-files = []
-folders = []
-saveMode = False
-checkingFinalFolder = False
-publishMode = False
-
 # Methods to execute
 # Save window methods
 def nameFile(currentValue):
    print("Save File mode")
-   stringList = currentValue.split("_")
-   stringList[-1] = stringList[-1].replace('.mb','')
-   stringList = stringList[-1].split('.v')
-   versionArray = [int(i) for i in stringList if can_convert_to_int(i)]
-   if len(versionArray) != 0:
-      versionNo = versionArray[0]+1
-      stringList.pop(-1)
-      updateNo = '.v' + f'{versionNo:03d}'
-      updateVersion = '_'.join(stringList) + updateNo
-   else:
-      updateVersion = currentValue + '.v001'
    if cmds.textFieldGrp('fileName', exists = True):
       cmds.deleteUI('fileName')
-   cmds.textFieldGrp('fileName', label = 'File Name', editable=True, text=updateVersion)
+   cmds.textFieldGrp('fileName', label = 'File Name', editable=True, text=versionUpdate(currentValue))
 
 def nameFolder(currentValue):
    global folderPath
@@ -76,6 +54,12 @@ def cacheFormated(destPath, folderName):
       command = "-frameRange " + str(start) + " " + str(end) + " -file " + str(customPth)
       cmds.AbcExport ( j = command )
 
+def updateAfterPublish():
+   os.remove(filePath)
+   customPath = joinPath(folderPath, versionUpdate(fileName)) 
+   cmds.file(rename = customPath)
+   cmds.file(s=True,f=True, type= "mayaBinary")
+
 
 # General functions
 def can_convert_to_int(string):
@@ -86,6 +70,20 @@ def can_convert_to_int(string):
     except ValueError:
         return False
 
+def versionUpdate(currentValue):
+   stringList = currentValue.split("_")
+   stringList[-1] = stringList[-1].replace('.mb','')
+   stringList = stringList[-1].split('.v')
+   versionArray = [int(i) for i in stringList if can_convert_to_int(i)]
+   if len(versionArray) != 0:
+      versionNo = versionArray[0]+1
+      stringList.pop(-1)
+      updateNo = '.v' + f'{versionNo:03d}'
+      updateVersion = '_'.join(stringList) + updateNo
+   else:
+      updateVersion = currentValue + '.v001'
+   return updateVersion
+
 def createOptionMenu(name, list):
    if cmds.optionMenu(name, exists = True):
          cmds.deleteUI(name)
@@ -94,10 +92,13 @@ def createOptionMenu(name, list):
          cmds.optionMenu(name, label= name, changeCommand=nameFile)
       else:
          cmds.separator(h=10)
-         cmds.text('Please choose model folder first before pressing following buttons(\'Character/Prop/Set/SetPiece/Sequence\')')
+         cmds.text('Please choose model folder from option menu first before pressing buttons below')
          cmds.separator(h=10)
          cmds.optionMenu(name, label= name, changeCommand=nameFolder)
    if (publishMode == True):
+      cmds.separator(h=10)
+      cmds.text('Please choose model folder from option menu first before pressing buttons below')
+      cmds.separator(h=10)
       cmds.optionMenu(name, label= name, changeCommand=checkfileFromWIP) 
    if not list:
       cmds.menuItem(label = '')
@@ -124,23 +125,6 @@ def folderButton(typeName, *args):
 def joinPath(file, newElement):
    newPath = pathlib.PurePath(file, newElement)
    return newPath
-
-def updateVersion():
-   os.remove(filePath)
-   stringList = fileName.split("_")
-   stringList[-1] = stringList[-1].replace('.mb','')
-   stringList = stringList[-1].split('.v')
-   versionArray = [int(i) for i in stringList if can_convert_to_int(i)]
-   if len(versionArray) != 0:
-      versionNo = versionArray[0]+1
-      stringList.pop(-1)
-      updateNo = '.v' + f'{versionNo:03d}'
-      updateVersion = '_'.join(stringList) + updateNo
-   else:
-      updateVersion = fileName + '.v001'
-   customPath = joinPath(folderPath, updateVersion) 
-   cmds.file(rename = customPath)
-   cmds.file(s=True,f=True, type= "mayaBinary")
 
 # UI Functions
 # Option menu commands
@@ -243,7 +227,7 @@ def publishFile():
    customPth = joinPath(dest, fileName) 
    cmds.file(rename = customPth)
    cmds.file(s=True,f=True, type= "mayaBinary")
-   updateVersion()
+   updateAfterPublish()
    cmds.deleteUI('publish_window')
    save_publish_init()
 
@@ -272,13 +256,13 @@ def save_window():
       os.mkdir(prefixPath)
    if cmds.window('save_publish_init', exists = True):
       cmds.deleteUI('save_publish_init')
-   if cmds.window('save_window', exists = True):
+   if cmds.window('save_window', exists = True, ):
       cmds.deleteUI('save_window')
-   cmds.window('save_window', resizeToFitChildren=True)
+   cmds.window('save_window', resizeToFitChildren=True, t= 'Save Windows')
    cmds.columnLayout( adjustableColumn=True )
 
    cmds.separator(h=10)
-   cmds.text('Asset')
+   cmds.text(label = 'Asset', fn = 'boldLabelFont')
    cmds.separator(h=10)
 
    cmds.button( label='Character', command='openCharater()')
@@ -287,7 +271,7 @@ def save_window():
    cmds.button( label='SetPiece', command='openSetPiece()')
 
    cmds.separator(h=10)
-   cmds.text('Sequence')
+   cmds.text(label = 'Sequence', fn = 'boldLabelFont')
    cmds.separator(h=10)
 
    cmds.button( label='Sequence', command='openSequence()')
@@ -314,11 +298,11 @@ def publish_window():
    destPath = joinPath(prefixPath, "publish")
    if(os.path.exists(destPath) == False):
       os.mkdir(destPath)
-   cmds.window('publish_window', resizeToFitChildren=True)
+   cmds.window('publish_window', resizeToFitChildren=True, t= 'Publish Windows')
    cmds.columnLayout( adjustableColumn=True )
 
    cmds.separator(h=10)
-   cmds.text('Asset')
+   cmds.text(label = 'Asset', fn = 'boldLabelFont')
    cmds.separator(h=10)
 
    cmds.button( label='Character', command='openCharater()')
@@ -327,13 +311,13 @@ def publish_window():
    cmds.button( label='SetPiece', command='openSetPiece()')
 
    cmds.separator(h=10)
-   cmds.text('Sequence')
+   cmds.text(label = 'Sequence', fn = 'boldLabelFont')
    cmds.separator(h=10)
 
    cmds.button( label='Sequence', command='openSequence()')
 
    cmds.separator(h=30)
-   cmds.text('Format')
+   cmds.text(label = 'Format', fn = 'boldLabelFont')
    cmds.separator(h=10)
 
    cmds.checkBox("FBX", l="Fbx Format")
@@ -372,7 +356,7 @@ def save_publish_init():
    
    if cmds.window('save_publish_init', exists = True):
       cmds.deleteUI('save_publish_init')
-   cmds.window('save_publish_init', resizeToFitChildren=True)
+   cmds.window('save_publish_init', resizeToFitChildren=True, t= 'Start Up Windows')
    cmds.columnLayout( adjustableColumn=True )
 
    cmds.separator(h=30)
