@@ -3,40 +3,26 @@ import os
 import pathlib
 from functools import partial
 
-path = ''
-prefixPath = ''
-folderPath = ''
-filePath = ''
-fileName = ''
-files = []
-folders = []
-saveMode = False
-checkingFinalFolder = False
-publishMode = False
-
 # Methods to execute
 # Save window methods
 def nameFile(currentValue):
    print("Save File mode")
-   stringList = currentValue.split("_")
-   versionArray = [int(i) for i in stringList[-1].split('v') if i.isdigit()]
-   if len(versionArray) != 0:
-      versionNo = versionArray[0]+1
-      stringList.pop(-1)
-      updateNo = '_v' + f'{versionNo:03d}'
-      updateVersion = '_'.join(stringList) + updateNo
-   else:
-      updateVersion = currentValue + '_v001'
    if cmds.textFieldGrp('fileName', exists = True):
       cmds.deleteUI('fileName')
-   cmds.textFieldGrp('fileName', label = 'File Name', editable=True, text=updateVersion)
+   cmds.textFieldGrp('fileName', label = 'File Name', editable=True, text=versionUpdate(currentValue))
 
 def nameFolder(currentValue):
    global folderPath
    global checkingFinalFolder
+   global menuCheck
    checkingFinalFolder = True
+   if (currentValue == ''):
+      currentValue = 'NewDocument'
+      menuCheck = True
    if cmds.textFieldGrp('folderName', exists = True):
       cmds.deleteUI('folderName')
+   if cmds.textFieldGrp('fileName', exists = True):
+      cmds.deleteUI('fileName')
    cmds.textFieldGrp('folderName', label = 'Model Folder Name', editable=True, text=currentValue)
 
 
@@ -69,11 +55,41 @@ def cacheFormated(destPath, folderName):
    if (folderName == 'abc'):
       start = 0
       end = 120
-      command = "-frameRange " + start + " " + end + " -file " + customPth
+      command = "-frameRange " + str(start) + " " + str(end) + " -file " + str(customPth)
       cmds.AbcExport ( j = command )
+
+def updateAfterPublish():
+   os.remove(filePath)
+   customPath = joinPath(folderPath, versionUpdate(fileName)) 
+   cmds.file(rename = customPath)
+   cmds.file(s=True,f=True, type= "mayaBinary")
 
 
 # General functions
+def can_convert_to_int(string):
+    try:
+        int(string)
+
+        return True
+    except ValueError:
+        return False
+
+def versionUpdate(currentValue):
+   stringList = currentValue.split("_")
+   stringList[-1] = stringList[-1].replace('.mb','')
+   version = stringList.pop(-1).split('.v')
+   for i in version:
+      stringList.append(i)
+   versionArray = [int(i) for i in stringList if can_convert_to_int(i)]
+   if len(versionArray) != 0:
+      versionNo = versionArray[0]+1
+      stringList.pop(-1)
+      updateNo = '.v' + f'{versionNo:03d}'
+      updateVersion = '_'.join(stringList) + updateNo
+   else:
+      updateVersion = currentValue + '.v001'
+   return updateVersion
+
 def createOptionMenu(name, list):
    if cmds.optionMenu(name, exists = True):
          cmds.deleteUI(name)
@@ -82,10 +98,13 @@ def createOptionMenu(name, list):
          cmds.optionMenu(name, label= name, changeCommand=nameFile)
       else:
          cmds.separator(h=10)
-         cmds.text('Please select a model folder first')
+         cmds.text('Please choose model folder from option menu first before pressing buttons below')
          cmds.separator(h=10)
          cmds.optionMenu(name, label= name, changeCommand=nameFolder)
    if (publishMode == True):
+      cmds.separator(h=10)
+      cmds.text('Please choose model folder from option menu first before pressing buttons below')
+      cmds.separator(h=10)
       cmds.optionMenu(name, label= name, changeCommand=checkfileFromWIP) 
    if not list:
       cmds.menuItem(label = '')
@@ -103,8 +122,10 @@ def folderButton(typeName, *args):
       folder = fileName
    modelFolder = joinPath(folderPath, folder)
    folderPath = joinPath(modelFolder, typeName)
-   pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
-   files = os.listdir(folderPath)
+   print(menuCheck)
+   if (menuCheck == True):
+      pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
+   files = os.listdir(folderPath)   
    createOptionMenu('Model', files)
    if (publishMode == True):
       cmds.button(label='Publish', command='publishFile()')
@@ -112,25 +133,6 @@ def folderButton(typeName, *args):
 def joinPath(file, newElement):
    newPath = pathlib.PurePath(file, newElement)
    return newPath
-
-def updateVersion():
-   os.remove(filePath)
-   stringList = fileName.split("_")
-   print(stringList)
-   stringList[-1] = stringList[-1].replace('.mb','')
-   versionArray = [int(i) for i in stringList[-1].split('v') if i.isdigit()]
-   if len(versionArray) != 0:
-      versionNo = versionArray[0]+1
-      stringList.pop(-1)
-      print(stringList)
-      updateNo = '_v' + f'{versionNo:03d}'
-      updateVersion = '_'.join(stringList) + updateNo
-   else:
-      updateVersion = fileName + '_v001'
-   customPath = joinPath(folderPath, updateVersion) 
-   cmds.file(rename = customPath)
-   cmds.file(s=True,f=True, type= "mayaBinary")
-
 
 # UI Functions
 # Option menu commands
@@ -142,7 +144,7 @@ def openCharater():
    global folderPath
    global folders
    typeList = ['anim', 'model', 'rig', 'surfacing']
-   folderPath = joinPath(prefixPath,"Asset/Character")
+   folderPath = joinPath(prefixPath,"assets/character")
    pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
    folders = os.listdir(folderPath)
    createOptionMenu('Character', folders)
@@ -154,7 +156,7 @@ def openProp():
    global folderPath
    global folders
    typeList = ['model', 'rig', 'surfacing']
-   folderPath = joinPath(prefixPath, "Asset/Prop")
+   folderPath = joinPath(prefixPath, "assets/prop")
    pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
    folders = os.listdir(folderPath)
    createOptionMenu('Prop', folders)
@@ -166,7 +168,7 @@ def openSet():
    global folderPath
    global folders
    typeList = ['model']
-   folderPath = joinPath(prefixPath, "Asset/Set")
+   folderPath = joinPath(prefixPath, "assets/set")
    pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
    folders = os.listdir(folderPath)
    createOptionMenu('Set', folders)
@@ -178,7 +180,7 @@ def openSetPiece():
    global folderPath
    global folders
    typeList = ['model', 'surfacing']
-   folderPath = joinPath(prefixPath, "Asset/SetPiece")
+   folderPath = joinPath(prefixPath, "assets/setpiece")
    pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
    folders = os.listdir(folderPath)
    createOptionMenu('SetPiece', folders)
@@ -190,7 +192,7 @@ def openSequence():
    global folderPath
    global folders
    typeList = ['animation', 'layout', 'light']
-   folderPath = joinPath(prefixPath,"Sequence")
+   folderPath = joinPath(prefixPath,"sequence")
    pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
    folders = os.listdir(folderPath)
    createOptionMenu('Sequence', folders)
@@ -203,28 +205,22 @@ def select():
    path = cmds.fileDialog2(fileMode=3)[0]
    if cmds.textFieldGrp('Prefix', exists = True):
       cmds.deleteUI('Prefix')
+   cmds.separator(h = 10)
+   cmds.text("Path Selected")
    path = cmds.textFieldGrp('Prefix', label = 'Folder Path:', text=path,editable=True)
    
 
 # Button commands
 def saveFile():
-   global folderPath
-   global fileName
-   global saveMode
-   global checkingFinalFolder
+   pathlib.Path(folderPath).mkdir(parents=True, exist_ok=True)
    fileName = cmds.textFieldGrp('fileName', q=True, text = True)
    customPth = joinPath(folderPath, fileName) 
    cmds.file(rename = customPth)
    cmds.file(s=True,f=True, type= "mayaBinary")
-   saveMode = False
-   checkingFinalFolder = False
    cmds.deleteUI('save_window')
    save_publish_init()
 
 def publishFile():
-   global fileName
-   global filePath
-   global publishMode
    length = len(str(prefixPath).split(os.sep))-1
    dest = str(filePath).split(os.sep)
    dest[dest.index("wip",length)] = 'publish'
@@ -240,8 +236,7 @@ def publishFile():
    customPth = joinPath(dest, fileName) 
    cmds.file(rename = customPth)
    cmds.file(s=True,f=True, type= "mayaBinary")
-   updateVersion()
-   publishMode = False
+   updateAfterPublish()
    cmds.deleteUI('publish_window')
    save_publish_init()
 
@@ -270,14 +265,13 @@ def save_window():
       os.mkdir(prefixPath)
    if cmds.window('save_publish_init', exists = True):
       cmds.deleteUI('save_publish_init')
-   if cmds.window('save_window', exists = True):
+   if cmds.window('save_window', exists = True, ):
       cmds.deleteUI('save_window')
-   cmds.window('save_window', resizeToFitChildren=True)
-
-   cmds.scrollLayout()
+   cmds.window('save_window', resizeToFitChildren=True, t= 'Save Windows')
+   cmds.columnLayout( adjustableColumn=True )
 
    cmds.separator(h=10)
-   cmds.text('Asset')
+   cmds.text(label = 'Asset', fn = 'boldLabelFont')
    cmds.separator(h=10)
 
    cmds.button( label='Character', command='openCharater()')
@@ -286,7 +280,7 @@ def save_window():
    cmds.button( label='SetPiece', command='openSetPiece()')
 
    cmds.separator(h=10)
-   cmds.text('Sequence')
+   cmds.text(label = 'Sequence', fn = 'boldLabelFont')
    cmds.separator(h=10)
 
    cmds.button( label='Sequence', command='openSequence()')
@@ -295,6 +289,8 @@ def save_window():
 
    cmds.button( label='Save', command='saveFile()')
    cmds.button( label='Cancel', command='saveWindowCancel()')
+
+   cmds.separator(h=20)
    
    cmds.showWindow('save_window')
 
@@ -308,14 +304,11 @@ def publish_window():
       cmds.deleteUI('save_publish_init')
    if cmds.window('publish_window', exists = True):
       cmds.deleteUI('publish_window')
-   destPath = joinPath(prefixPath, "publish")
-   if(os.path.exists(destPath) == False):
-      os.mkdir(destPath)
-   cmds.window('publish_window', resizeToFitChildren=True)
-   cmds.scrollLayout()
+   cmds.window('publish_window', resizeToFitChildren=True, t= 'Publish Windows')
+   cmds.columnLayout( adjustableColumn=True )
 
    cmds.separator(h=10)
-   cmds.text('Asset')
+   cmds.text(label = 'Asset', fn = 'boldLabelFont')
    cmds.separator(h=10)
 
    cmds.button( label='Character', command='openCharater()')
@@ -324,13 +317,13 @@ def publish_window():
    cmds.button( label='SetPiece', command='openSetPiece()')
 
    cmds.separator(h=10)
-   cmds.text('Sequence')
+   cmds.text(label = 'Sequence', fn = 'boldLabelFont')
    cmds.separator(h=10)
 
    cmds.button( label='Sequence', command='openSequence()')
 
    cmds.separator(h=30)
-   cmds.text('Format')
+   cmds.text(label = 'Format', fn = 'boldLabelFont')
    cmds.separator(h=10)
 
    cmds.checkBox("FBX", l="Fbx Format")
@@ -340,20 +333,56 @@ def publish_window():
 
    cmds.button( label='Cancel', command='publishWindowCancel()')
 
+   cmds.separator(h=20)
+
    cmds.showWindow('publish_window')
 
 
 def save_publish_init():
+   global path
+   global prefixPath
+   global folderPath
+   global filePath
+   global fileName
+   global files
+   global folders
+   global saveMode
+   global publishMode
+   global checkingFinalFolder
+   global menuCheck
+   path = ''
+   prefixPath = ''
+   folderPath = ''
+   filePath = ''
+   fileName = ''
+   files = []
+   folders = []
+   saveMode = False
+   checkingFinalFolder = False
+   publishMode = False
+   menuCheck = False
+   
+   
    if cmds.window('save_publish_init', exists = True):
       cmds.deleteUI('save_publish_init')
-   cmds.window('save_publish_init', resizeToFitChildren=True)
-   cmds.columnLayout()
+   cmds.window('save_publish_init', resizeToFitChildren=True, t= 'Start Up Windows')
+   cmds.columnLayout( adjustableColumn=True )
 
-   global path
-   cmds.button(label = 'Select File', command = 'select()')
+   cmds.separator(h=30)
+   cmds.text(label = 'Set Folder', fn = 'boldLabelFont')
+   cmds.separator(h=10)
+
+   cmds.button(label = 'Select Folder', command = 'select()')
    cmds.button(label = 'Confirm', command = 'confirm()')
+
+   cmds.separator(h=10)
+   cmds.text(label = 'Save and Publish Functions', fn = 'boldLabelFont')
+   cmds.separator(h=10)
+
    cmds.button(label = 'Save', command = 'save_window()')
    cmds.button(label = 'Publish', command = 'publish_window()')
+
+   cmds.separator(h=10)
    cmds.button(label = 'Exit', command = 'exitButton()')
 
    cmds.showWindow('save_publish_init')
