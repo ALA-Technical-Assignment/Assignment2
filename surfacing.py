@@ -6,7 +6,7 @@ import os
 #-------------------------------------------------------------------------------------------------Surfacing-----------------------------------------------------------------------------------------
 # Publish materials
 def PublishMaterial():
-    if ('surfacing' in cmds.file(q=True, sn=True)): #only triggers when in a surfacing scene
+    if ('surfacing' in cmds.file(q=True, sn=True) and 'wip' in cmds.file(q=True, sn=True)): #only triggers when in a surfacing scene
         cmds.select(clear = True) #deselect all
         RefVer = cmds.referenceQuery(cmds.ls(referencedNodes = True)[0] ,filename=True) #the model reference
         JsonFile = {RefVer : {}}  #stored to check compability of shader and object in scene
@@ -37,7 +37,7 @@ def PublishMaterial():
             json.dump(JsonFile, outfile, indent = 4)     
         print ('Success! published into: \n'+ MaterialPath)
     else:
-        print ('Not in Surfacing')
+        cmds.warning ('Either Not in Surfacing or not in WIP')
 
 
 def GetMaterialFromObject(target): #helper method to get material from Object
@@ -109,6 +109,8 @@ def LoadAllMaterials():
             if (path != None):
                 if not cmds.listRelatives ( object, shapes=True ): #if it's the head of the ref
                     LoadMaterial(object,path)#load it from there
+            else:
+                cmds.warning(object + ' doesn\'t have a published material')
 
 #load specific material for a psecific object                 
 def ManualLoadMaterial():
@@ -191,10 +193,10 @@ def MainWindow():
     cmds.window('ShaderPublishing', resizeToFitChildren=True)
     cmds.columnLayout( adjustableColumn=True )
     cmds.text(label='-----------------Surfacing Scene-----------------')
-    cmds.button(label = 'Publish And Save Shader', command = 'PublishMaterial()')
+    cmds.button(label = 'Publish and Save Shader', command = 'PublishMaterial()')
     cmds.text(label='------------------Lighting Scene------------------')
-    cmds.button(label = 'Load All latest material', command = 'LoadAllMaterials()')
-    cmds.button(label = 'Manually load material of selected', command = 'ManualLoadMaterial()')
+    cmds.button(label = 'Load All Latest Material', command = 'LoadAllMaterials()')
+    cmds.button(label = 'Manually Load Material of Selected', command = 'ManualLoadMaterial()')
     cmds.showWindow('ShaderPublishing')
 
 
